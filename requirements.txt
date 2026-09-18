@@ -1,0 +1,12 @@
+# FastSchool 当前主应用（截图分割模式）核心依赖
+fastapi>=0.109
+uvicorn>=0.27
+python-multipart>=0.0.6
+pymupdf>=1.24
+Pillow>=10.0
+
+# ── 旧版文本/OCR 解析器（legacy/ 目录）可选依赖 ──
+# python-docx        # 旧 .docx 解析 (legacy/parser.py)
+# pdfplumber         # 旧 PDF 文本解析 (legacy/parser.py)
+# pytesseract        # 旧 OCR（需系统安装 tesseract-ocr）
+# paddlepaddle / paddleocr  # 旧 PaddleOCR 扫描版方案 (legacy/ocr_parser.py)
