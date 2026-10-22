@@ -617,6 +617,14 @@
             }
         }
 
+        /* 演示模式：?demo=1 自动加载内置示例试卷（用于在线预览） */
+        if (new URLSearchParams(location.search).get('demo') === '1') {
+            fetch('/static/demo_paper.pdf')
+                .then(r => { if (!r.ok) throw new Error('demo pdf missing'); return r.blob(); })
+                .then(b => handleFile(new File([b], 'demo_paper.pdf', { type: 'application/pdf' })))
+                .catch(() => {});
+        }
+
         function showError(msg) {
             // 在上传区域显示错误信息
             const heroSubtitle = document.querySelector('.hero-subtitle');
