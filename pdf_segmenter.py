@@ -2,6 +2,7 @@ import base64
 import re
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
+import os
 
 import fitz
 from PIL import Image
@@ -11,10 +12,10 @@ RE_Q_START = re.compile(r"^\s*(\d{1,3})\s*[.)、]\s*")
 RE_OPT_MARK = re.compile(r"([A-Da-d])\s*[.)、]")
 RE_OPT_WORD = re.compile(r"^([A-Da-d])[.)、]$")
 
-PAD = 1.0
-STEM_LINE_GAP = 10.0
-OPTION_LINE_GAP = 5.0
-INDENT_MIN = 12.0
+PAD = float(os.getenv("FASTSCHOOL_PAD", "1.0"))
+STEM_LINE_GAP = float(os.getenv("FASTSCHOOL_STEM_GAP", "10.0"))
+OPTION_LINE_GAP = float(os.getenv("FASTSCHOOL_OPT_GAP", "5.0"))
+INDENT_MIN = float(os.getenv("FASTSCHOOL_INDENT_MIN", "12.0"))
 
 
 def _tighten_bbox(b: Tuple[float, float, float, float], dy: float = 1.0) -> Tuple[float, float, float, float]:

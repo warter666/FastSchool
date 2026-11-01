@@ -14,22 +14,12 @@ import re
 
 app = FastAPI(title="FastSchool", version="1.2.0")
 
-_answer_uploads = {}
 
-
-def _parse_answerkey_text(text: str) -> dict:
-    answers = {}
-    for raw in (text or "").splitlines():
-        line = raw.strip()
-        if not line:
-            continue
-        m = re.match(r"^(\d{1,4})\s*[:：.、-]?\s*([A-Da-d])\b", line)
-        if not m:
-            continue
-        qid = int(m.group(1))
-        ans = m.group(2).upper()
-        answers[qid] = ans
-    return answers
+def _parse_answer_text(text: str) -> dict:
+    """解析纯文本答案格式：123:A / 456. B"""
+    return {int(m[1]): m[2].upper() 
+            for line in (text or "").splitlines()
+            if (m := re.match(r"^(\d{1,4})\s*[:：.、-]?\s*([A-Da-d])", line.strip()))}
 
 # CORS 允许跨域
 app.add_middleware(
@@ -61,12 +51,6 @@ def try_parse_with_ocr(tmp_path: str) -> dict:
         return {"error": f"截图分割失败: {str(e)}", "total": 0, "source": "failed"}
 
 
-@app.post("/upload")
-async def upload_file_legacy():
-    return {
-        "success": False,
-        "error": "旧接口已废弃：请刷新页面或改用 /upload_screenshot",
-    }
 
 
 @app.post("/upload_screenshot")
@@ -114,65 +98,35 @@ async def upload_file(file: UploadFile = File(...)):
 
 @app.post("/upload_answerkey")
 async def upload_answerkey(file: UploadFile = File(...)):
+    """答案卡上传接口：pdf/png/jpg 存临时目录（tmp_*），txt 直接解析"""
     filename = (file.filename or "").lower()
-    allowed = ('.pdf', '.png', '.jpg', '.jpeg', '.txt')
-    if not filename.endswith(allowed):
-        return {
-            "success": False,
-            "error": "答案文件仅支持 .pdf/.png/.jpg/.jpeg/.txt",
-        }
-
     suffix = os.path.splitext(filename)[1]
-    upload_id = str(uuid.uuid4())
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        content = await file.read()
-        tmp.write(content)
-        tmp_path = tmp.name
-
-    _answer_uploads[upload_id] = {
-        "filename": file.filename,
-        "path": tmp_path,
-        "size": len(content),
-    }
-
+    
+    allowed = ('.pdf', '.png', '.jpg', '.jpeg')
+    if not filename.endswith(allowed) and suffix != '.txt':
+        return {"success": False, "error": "仅支持 .pdf/.png/.jpg/.jpeg/.txt"}
+    
+    content = await file.read()
     answers = {}
-    parsed = False
-    if suffix == ".txt":
+    parsed = suffix == '.txt'
+    
+    if suffix == '.txt':
         try:
-            answers = _parse_answerkey_text(content.decode("utf-8", errors="ignore"))
-            parsed = True
+            answers = _parse_answer_text(content.decode("utf-8", errors="ignore"))
         except Exception:
-            parsed = False
-
-    _answer_uploads[upload_id]["parsed"] = parsed
-    _answer_uploads[upload_id]["answers"] = answers
-
-    return {
-        "success": True,
-        "id": upload_id,
-        "filename": file.filename,
-        "size": len(content),
-        "parsed": parsed,
-        "count": len(answers),
-        "answers": answers,
-    }
-
-
-@app.get("/answerkey/{answer_id}")
-async def get_answerkey(answer_id: str):
-    item = _answer_uploads.get(answer_id)
-    if not item:
-        return {"success": False, "error": "答案不存在或已过期"}
-    return {
-        "success": True,
-        "id": answer_id,
-        "filename": item.get("filename"),
-        "parsed": bool(item.get("parsed")),
-        "count": len(item.get("answers") or {}),
-        "answers": item.get("answers") or {},
-    }
+            pass
+    
+    upload_id = str(uuid.uuid4())
+    if suffix != '.txt':
+        tmp_path = f"tmp_{upload_id}{suffix}"
+        with open(tmp_path, "wb") as f:
+            f.write(content)
+    
+    return {"success": True, "id": upload_id, "filename": file.filename,
+            "size": len(content), "parsed": parsed, 
+            "count": len(answers), "answers": answers}
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
