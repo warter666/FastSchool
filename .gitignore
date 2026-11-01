@@ -7,3 +7,9 @@ venv/
 .DS_Store
 answer_uploads/
 tmp_*
+
+# 本地工作流文件，不进公开仓库
+AGENTS.md
+CLAUDE.md
+.agents/
+notes/

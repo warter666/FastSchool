@@ -13,26 +13,50 @@
 
 ## 🚀 快速开始
 
-### 1. 安装依赖
+以下命令均在 Linux (Python 3.10) 上实际验证过。
+
+### 1. 安装
 
 ```bash
-pip install -r requirements.txt
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
-### 2. 启动服务
+### 2. 命令行直接切分（不启服务）
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000
+.venv/bin/python -c "from pdf_segmenter import segment_pdf_questions as s; r = s('samples/demo_paper.pdf'); print('total:', r['total'], '| options:', sorted(r['questions'][0]['parsed']['options']))"
 ```
 
-### 3. 使用
+预期输出：
 
-访问 `http://localhost:8000` 上传 PDF。
+```
+total: 1 | options: ['A', 'B']
+```
+
+`segment_pdf_questions` 返回每题的题干/选项 PNG（base64 data-url）。示例卷
+`samples/demo_paper.pdf` 会切出 3 张图：1 张题干 + 2 张选项（A/B）。
+
+### 3. 启动答题界面
+
+```bash
+.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+```
+
+浏览器打开 `http://127.0.0.1:8000`，把 `samples/demo_paper.pdf` 拖进上传区，
+页面上会看到 1 道题、共 3 张切分图（题干 + 选项 A/B 各一张）。再上传
+`samples/answer_key.txt`（每行 `题号 选项`）即可选答案、交卷判分。
+
+也可以直接用 curl 验证接口：
+
+```bash
+curl -F "file=@samples/demo_paper.pdf" http://127.0.0.1:8000/upload_screenshot
+```
+
+预期返回 `"success":true`、`"total":1`，`questions[0].parsed` 里带 base64 图片。
 
 如果本机端口被占用，换一个端口即可，例如：`--port 9800`。
 
-注意：当前仅支持 PDF（截图分割模式）。`samples/` 里有一份单题示例卷 `demo_paper.pdf`
-和示例答案卡 `answer_key.txt`，可用来快速体验。
+注意：当前仅支持文字版 PDF（截图分割模式）。
 
 ## 🧠 工作原理
 

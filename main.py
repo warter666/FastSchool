@@ -1,7 +1,6 @@
 """
-FastSchool - 试卷答题系统
-支持上传 Word(.docx) 和 PDF(.pdf) 文档，在线答题练习
-支持 OCR 扫描版 PDF
+FastSchool - 试卷答题系统（截图分割模式）
+上传文字版 PDF，按版面坐标切分题干/选项图片，在线答题判分
 """
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import HTMLResponse
